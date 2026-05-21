@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevSphere Socket.IO Test</title>
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    input, button { margin: 0.25rem 0; padding: 0.5rem; }
+    #log { background: #111; color: #0f0; padding: 1rem; min-height: 200px; white-space: pre-wrap; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>DevSphere Socket.IO Test</h1>
+  <p>Same-origin page — connects to this server on port 5000.</p>
+  <label>Project ID <input id="projectId" size="36" placeholder="MongoDB project _id" /></label><br />
+  <label>Username <input id="username" value="tester" /></label><br />
+  <button id="connectBtn">Connect</button>
+  <button id="joinBtn" disabled>join-project</button>
+  <button id="codeBtn" disabled>code-change</button>
+  <button id="leaveBtn" disabled>leave-project</button>
+  <button id="disconnectBtn" disabled>disconnect</button>
+  <pre id="log"></pre>
+  <script>
+    const logEl = document.getElementById('log');
+    const connectBtn = document.getElementById('connectBtn');
+    const joinBtn = document.getElementById('joinBtn');
+    const codeBtn = document.getElementById('codeBtn');
+    const leaveBtn = document.getElementById('leaveBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const projectIdInput = document.getElementById('projectId');
+    const usernameInput = document.getElementById('username');
+
+    const log = (msg) => {
+      logEl.textContent += `${msg}\n`;
+    };
+
+    let socket;
+
+    const setConnectedUI = (connected) => {
+      connectBtn.disabled = connected;
+      joinBtn.disabled = !connected;
+      disconnectBtn.disabled = !connected;
+
+      if (!connected) {
+        codeBtn.disabled = true;
+        leaveBtn.disabled = true;
+      }
+    };
+
+    connectBtn.onclick = () => {
+      if (socket?.connected) {
+        log('already connected');
+        return;
+      }
+
+      socket = io({ transports: ['websocket', 'polling'] });
+
+      socket.on('connect', () => {
+        log(`connected: ${socket.id}`);
+        setConnectedUI(true);
+      });
+
+      socket.on('connect_error', (err) => log(`connect_error: ${err.message}`));
+      socket.on('disconnect', (reason) => {
+        log(`disconnect: ${reason}`);
+        setConnectedUI(false);
+      });
+
+      socket.on('active-users', (users) => log(`active-users: ${JSON.stringify(users)}`));
+      socket.on('user-joined', (user) => log(`user-joined: ${JSON.stringify(user)}`));
+      socket.on('user-left', (user) => log(`user-left: ${JSON.stringify(user)}`));
+      socket.on('code-update', (data) => log(`code-update: ${JSON.stringify(data)}`));
+    };
+
+    joinBtn.onclick = () => {
+      if (!socket?.connected) {
+        log('not connected');
+        return;
+      }
+
+      const projectId = projectIdInput.value.trim();
+      const username = usernameInput.value.trim();
+
+      if (!projectId || !username) {
+        log('projectId and username are required');
+        return;
+      }
+
+      socket.emit('join-project', { projectId, username });
+      codeBtn.disabled = false;
+      leaveBtn.disabled = false;
+      log('emit join-project');
+    };
+
+    codeBtn.onclick = () => {
+      if (!socket?.connected) {
+        log('not connected');
+        return;
+      }
+
+      const projectId = projectIdInput.value.trim();
+      const username = usernameInput.value.trim();
+
+      if (!projectId) {
+        log('projectId is required');
+        return;
+      }
+
+      socket.emit('code-change', {
+        projectId,
+        code: `print("hello from ${username}")`,
+        cursor: { line: 0, ch: 0 },
+      });
+      log('emit code-change');
+    };
+
+    leaveBtn.onclick = () => {
+      if (!socket?.connected) {
+        log('not connected');
+        return;
+      }
+
+      const projectId = projectIdInput.value.trim();
+
+      if (!projectId) {
+        log('projectId is required');
+        return;
+      }
+
+      socket.emit('leave-project', { projectId });
+      codeBtn.disabled = true;
+      leaveBtn.disabled = true;
+      log('emit leave-project');
+    };
+
+    disconnectBtn.onclick = () => {
+      if (!socket?.connected) {
+        log('not connected');
+        return;
+      }
+
+      socket.disconnect();
+      log('manual disconnect');
+    };
+  </script>
+</body>
+</html>
