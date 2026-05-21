@@ -1,31 +1,16 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const protect = require('../middleware/auth');
 const Project = require('../models/Project');
 const User = require('../models/User');
+const {
+  isValidObjectId,
+  isOwnerOrCollaborator,
+  isOwner,
+} = require('../utils/projectAccess');
 
 const router = express.Router();
 
 router.use(protect);
-
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
-
-const getOwnerId = (owner) => (owner._id ? owner._id : owner).toString();
-
-const isOwnerOrCollaborator = (project, userId) => {
-  const userIdStr = userId.toString();
-
-  if (getOwnerId(project.owner) === userIdStr) {
-    return true;
-  }
-
-  return project.collaborators.some((collab) => {
-    const collabId = collab._id ? collab._id : collab;
-    return collabId.toString() === userIdStr;
-  });
-};
-
-const isOwner = (project, userId) => getOwnerId(project.owner) === userId.toString();
 
 const populateUsers = (query) => query
   .populate('owner', 'username email')
