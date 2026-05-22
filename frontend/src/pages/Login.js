@@ -33,9 +33,21 @@ function Login() {
 
   return (
     <main className="auth-page">
+      <section className="auth-hero" aria-label="DevSphere">
+        <div className="auth-brand">DevSphere</div>
+        <h1>Collaborate. Code. Build Together.</h1>
+        <p>Realtime collaborative coding, project sharing, execution, and moderation in one focused workspace.</p>
+        <div className="auth-hero__stats" aria-label="Platform highlights">
+          <span>Live Monaco editing</span>
+          <span>Secure execution</span>
+          <span>Team workspaces</span>
+        </div>
+      </section>
+
       <section className="auth-panel" aria-labelledby="login-title">
-        <h1 id="login-title">Welcome back</h1>
-        <p className="auth-subtitle">Sign in to continue building in DevSphere.</p>
+        <span className="auth-eyebrow">Sign in</span>
+        <h2 id="login-title">Welcome back</h2>
+        <p className="auth-subtitle">Continue building with your team.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {error && <p className="auth-error">{error}</p>}

@@ -1,15 +1,58 @@
+:root {
+  --bg: #080b10;
+  --bg-raised: #0e131b;
+  --surface: #121821;
+  --surface-soft: #161d28;
+  --surface-hover: #1a2330;
+  --border: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.3);
+  --text: #f4f7fb;
+  --text-muted: #94a3b8;
+  --text-soft: #cbd5e1;
+  --accent: #41d192;
+  --accent-strong: #26a269;
+  --accent-blue: #60a5fa;
+  --danger: #fb7185;
+  --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 12px 34px rgba(0, 0, 0, 0.22);
+  --radius: 8px;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #0f1117;
-  color: #e6edf3;
+  background: var(--bg);
+  color: var(--text);
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Monaco,
     monospace;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+::selection {
+  background: rgba(65, 209, 146, 0.28);
 }

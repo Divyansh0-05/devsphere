@@ -33,8 +33,20 @@ function Register() {
 
   return (
     <main className="auth-page">
+      <section className="auth-hero" aria-label="DevSphere">
+        <div className="auth-brand">DevSphere</div>
+        <h1>Write code together in real time.</h1>
+        <p>Create projects, invite collaborators, run code securely, and keep every workspace moving.</p>
+        <div className="auth-hero__stats" aria-label="Platform highlights">
+          <span>Shared projects</span>
+          <span>Realtime presence</span>
+          <span>Execution history</span>
+        </div>
+      </section>
+
       <section className="auth-panel" aria-labelledby="register-title">
-        <h1 id="register-title">Create account</h1>
+        <span className="auth-eyebrow">Get started</span>
+        <h2 id="register-title">Create account</h2>
         <p className="auth-subtitle">Start a workspace and invite collaborators when you are ready.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
