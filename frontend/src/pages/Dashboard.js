@@ -65,8 +65,10 @@ function Dashboard() {
     language: 'python',
   });
 
-  const username = useMemo(() => getStoredUser().username || 'Developer', []);
-  const currentUserId = useMemo(() => getStoredUser().id || getStoredUser()._id || '', []);
+  const currentUser = useMemo(() => getStoredUser(), []);
+  const username = currentUser.username || 'Developer';
+  const currentUserId = currentUser.id || currentUser._id || '';
+  const isAdmin = currentUser.role === 'admin';
   const ownedProjects = useMemo(
     () => projects.filter((project) => getProjectOwnerId(project) === currentUserId),
     [currentUserId, projects],
@@ -153,6 +155,15 @@ function Dashboard() {
           </div>
 
           <div className="dashboard-actions">
+            {isAdmin && (
+              <button
+                className="dashboard-button dashboard-button--ghost"
+                type="button"
+                onClick={() => navigate('/admin')}
+              >
+                Admin
+              </button>
+            )}
             <button
               className="dashboard-button dashboard-button--primary"
               type="button"

@@ -10,6 +10,7 @@ const { registerCollaborationHandlers } = require('./socket/collaboration');
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const authRouter = require('./routes/auth');
+const adminRouter = require('./routes/admin');
 const projectsRouter = require('./routes/projects');
 const executeRouter = require('./routes/execute');
 
@@ -67,6 +68,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/projects', executeRouter);
 

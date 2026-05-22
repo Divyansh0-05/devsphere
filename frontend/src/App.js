@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { getAuthToken } from './api/client';
+import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import ProjectEditorPage from './pages/ProjectEditorPage';
@@ -12,6 +13,24 @@ function RequireAuth({ children }) {
 
 function PublicOnly({ children }) {
   return getAuthToken() ? <Navigate to="/dashboard" replace /> : children;
+}
+
+function getStoredUserRole() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}').role;
+  } catch {
+    return undefined;
+  }
+}
+
+function RequireAdmin({ children }) {
+  if (!getAuthToken()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return getStoredUserRole() === 'admin'
+    ? children
+    : <Navigate to="/dashboard" replace />;
 }
 
 function App() {
@@ -48,6 +67,14 @@ function App() {
             <RequireAuth>
               <ProjectEditorPage />
             </RequireAuth>
+          )}
+        />
+        <Route
+          path="/admin"
+          element={(
+            <RequireAdmin>
+              <Admin />
+            </RequireAdmin>
           )}
         />
         <Route path="/" element={<Navigate to={getAuthToken() ? '/dashboard' : '/login'} replace />} />
