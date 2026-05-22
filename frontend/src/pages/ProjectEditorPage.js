@@ -1,10 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import api, { getAuthToken } from '../api/client';
 import Editor from '../components/Editor';
 import './ProjectEditorPage.css';
 
 const LANGUAGE_OPTIONS = ['python', 'javascript', 'java', 'cpp'];
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+const getStoredUsername = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.username || user.email || 'Anonymous';
+  } catch {
+    return 'Anonymous';
+  }
+};
+
+const getPresenceColor = (username = '') => {
+  let hash = 0;
+
+  for (let index = 0; index < username.length; index += 1) {
+    hash = (hash * 31 + username.charCodeAt(index)) % 360;
+  }
+
+  return `hsl(${hash}, 64%, 48%)`;
+};
 
 function ProjectEditorPage() {
   const { id } = useParams();
@@ -17,8 +38,12 @@ function ProjectEditorPage() {
   const [output, setOutput] = useState('');
   const [executionError, setExecutionError] = useState('');
   const [executionTime, setExecutionTime] = useState(null);
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [collaborationNotice, setCollaborationNotice] = useState('');
 
   const socketRef = useRef(null);
+  const latestCodeRef = useRef('');
+  const applyingRemoteUpdateRef = useRef(false);
 
   const isReadOnly = loading || executing;
 
@@ -37,6 +62,10 @@ function ProjectEditorPage() {
   const terminalClassName = executionError && !executing
     ? 'editor-terminal editor-terminal--error'
     : 'editor-terminal';
+
+  useEffect(() => {
+    latestCodeRef.current = code;
+  }, [code]);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -75,17 +104,96 @@ function ProjectEditorPage() {
 
     fetchProject();
 
+    return undefined;
+  }, [id]);
+
+  useEffect(() => {
+    if (loading || error || !getAuthToken()) {
+      return undefined;
+    }
+
+    const username = getStoredUsername();
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join-project', {
+        projectId: id,
+        username,
+      });
+    });
+
+    socket.on('code-update', ({ code: incomingCode }) => {
+      if (typeof incomingCode !== 'string' || incomingCode === latestCodeRef.current) {
+        return;
+      }
+
+      applyingRemoteUpdateRef.current = true;
+      latestCodeRef.current = incomingCode;
+      setCode(incomingCode);
+
+      requestAnimationFrame(() => {
+        applyingRemoteUpdateRef.current = false;
+      });
+    });
+
+    socket.on('active-users', (users) => {
+      setActiveUsers(Array.isArray(users) ? users : []);
+    });
+
+    socket.on('user-joined', ({ username: joinedUsername }) => {
+      if (joinedUsername) {
+        setCollaborationNotice(`${joinedUsername} joined`);
+      }
+    });
+
+    socket.on('user-left', ({ username: leftUsername }) => {
+      if (leftUsername) {
+        setCollaborationNotice(`${leftUsername} left`);
+      }
+    });
+
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      socket.emit('leave-project', { projectId: id });
+      socket.removeAllListeners();
+      socket.disconnect();
+
+      if (socketRef.current === socket) {
         socketRef.current = null;
       }
     };
-  }, [id]);
+  }, [error, id, loading]);
+
+  useEffect(() => {
+    if (!collaborationNotice) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCollaborationNotice('');
+    }, 2500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [collaborationNotice]);
 
   const handleCodeChange = useCallback((nextCode) => {
+    if (nextCode === latestCodeRef.current) {
+      return;
+    }
+
+    latestCodeRef.current = nextCode;
     setCode(nextCode);
-  }, []);
+
+    if (!applyingRemoteUpdateRef.current && socketRef.current?.connected) {
+      socketRef.current.emit('code-change', {
+        projectId: id,
+        code: nextCode,
+      });
+    }
+  }, [id]);
 
   const handleLanguageChange = useCallback((event) => {
     setLanguage(event.target.value);
@@ -150,6 +258,27 @@ function ProjectEditorPage() {
         </div>
 
         <div className="editor-header__actions">
+          <div className="editor-presence" aria-label="Active collaborators">
+            <div className="editor-presence__avatars">
+              {activeUsers.map((user) => (
+                <span
+                  className="editor-presence__avatar"
+                  key={user.socketId}
+                  title={user.username}
+                  style={{ backgroundColor: getPresenceColor(user.username) }}
+                >
+                  {(user.username || '?').slice(0, 1).toUpperCase()}
+                </span>
+              ))}
+            </div>
+            <span className="editor-presence__count">
+              {activeUsers.length} active
+            </span>
+            {collaborationNotice && (
+              <span className="editor-presence__notice">{collaborationNotice}</span>
+            )}
+          </div>
+
           <label className="editor-language" htmlFor="language-select">
             Language
             <select

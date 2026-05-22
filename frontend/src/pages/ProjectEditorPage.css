@@ -46,6 +46,51 @@
   gap: 1rem;
 }
 
+.editor-presence {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 38px;
+  color: #8b949e;
+  font-size: 0.85rem;
+}
+
+.editor-presence__avatars {
+  display: flex;
+  align-items: center;
+  min-width: 1.9rem;
+}
+
+.editor-presence__avatar {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-left: -0.45rem;
+  border: 2px solid #161b22;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.editor-presence__avatar:first-child {
+  margin-left: 0;
+}
+
+.editor-presence__count {
+  white-space: nowrap;
+}
+
+.editor-presence__notice {
+  max-width: 160px;
+  overflow: hidden;
+  color: #79c0ff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .editor-language {
   display: flex;
   flex-direction: column;
@@ -170,5 +215,13 @@
 
   .editor-header {
     padding: 1rem;
+  }
+
+  .editor-header__actions {
+    align-items: stretch;
+  }
+
+  .editor-presence {
+    flex-basis: 100%;
   }
 }
