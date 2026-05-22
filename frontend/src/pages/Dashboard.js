@@ -13,6 +13,26 @@ const getStoredUser = () => {
   }
 };
 
+const getProjectOwnerId = (project) => {
+  if (!project?.owner) {
+    return '';
+  }
+
+  if (typeof project.owner === 'string') {
+    return project.owner;
+  }
+
+  return project.owner._id || project.owner.id || '';
+};
+
+const getOwnerLabel = (project) => {
+  if (!project?.owner || typeof project.owner === 'string') {
+    return '';
+  }
+
+  return project.owner.username || project.owner.email || '';
+};
+
 const formatUpdatedAt = (value) => {
   if (!value) {
     return 'Updated recently';
@@ -46,6 +66,15 @@ function Dashboard() {
   });
 
   const username = useMemo(() => getStoredUser().username || 'Developer', []);
+  const currentUserId = useMemo(() => getStoredUser().id || getStoredUser()._id || '', []);
+  const ownedProjects = useMemo(
+    () => projects.filter((project) => getProjectOwnerId(project) === currentUserId),
+    [currentUserId, projects],
+  );
+  const sharedProjects = useMemo(
+    () => projects.filter((project) => getProjectOwnerId(project) !== currentUserId),
+    [currentUserId, projects],
+  );
 
   const fetchProjects = useCallback(async () => {
     if (!getAuthToken()) {
@@ -143,28 +172,74 @@ function Dashboard() {
 
         {loading && <div className="dashboard-status">Loading projects...</div>}
         {!loading && error && <div className="dashboard-error">{error}</div>}
-        {!loading && !error && projects.length === 0 && (
-          <div className="dashboard-empty">No projects yet. Create one to start coding.</div>
-        )}
+        {!loading && !error && (
+          <div className="dashboard-sections">
+            <section className="dashboard-section" aria-labelledby="owned-projects-title">
+              <div className="dashboard-section__header">
+                <h2 id="owned-projects-title">Your Projects ({ownedProjects.length})</h2>
+              </div>
 
-        {!loading && !error && projects.length > 0 && (
-          <section className="project-grid" aria-label="Projects">
-            {projects.map((project) => (
-              <button
-                className="project-card"
-                key={project._id}
-                type="button"
-                onClick={() => navigate(`/projects/${project._id}`)}
-              >
-                <div className="project-card__top">
-                  <h2>{project.name}</h2>
-                  <span className="project-language">{project.language}</span>
+              {ownedProjects.length === 0 ? (
+                <div className="dashboard-empty">Create a project to start building your workspace.</div>
+              ) : (
+                <div className="project-grid">
+                  {ownedProjects.map((project) => (
+                    <button
+                      className="project-card"
+                      key={project._id}
+                      type="button"
+                      onClick={() => navigate(`/projects/${project._id}`)}
+                    >
+                      <div className="project-card__top">
+                        <h3>{project.name}</h3>
+                        <span className="project-language">{project.language}</span>
+                      </div>
+                      <p>{project.description || 'No description yet.'}</p>
+                      <span className="project-updated">{formatUpdatedAt(project.updatedAt)}</span>
+                    </button>
+                  ))}
                 </div>
-                <p>{project.description || 'No description yet.'}</p>
-                <span className="project-updated">{formatUpdatedAt(project.updatedAt)}</span>
-              </button>
-            ))}
-          </section>
+              )}
+            </section>
+
+            <section className="dashboard-section" aria-labelledby="shared-projects-title">
+              <div className="dashboard-section__header">
+                <h2 id="shared-projects-title">Shared With You ({sharedProjects.length})</h2>
+              </div>
+
+              {sharedProjects.length === 0 ? (
+                <div className="dashboard-empty">No shared projects yet.</div>
+              ) : (
+                <div className="project-grid">
+                  {sharedProjects.map((project) => {
+                    const ownerLabel = getOwnerLabel(project);
+
+                    return (
+                      <button
+                        className="project-card"
+                        key={project._id}
+                        type="button"
+                        onClick={() => navigate(`/projects/${project._id}`)}
+                      >
+                        <div className="project-card__top">
+                          <h3>{project.name}</h3>
+                          <div className="project-card__badges">
+                            <span className="project-shared">Shared</span>
+                            <span className="project-language">{project.language}</span>
+                          </div>
+                        </div>
+                        <p>{project.description || 'No description yet.'}</p>
+                        {ownerLabel && (
+                          <span className="project-owner">Owner: {ownerLabel}</span>
+                        )}
+                        <span className="project-updated">{formatUpdatedAt(project.updatedAt)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
         )}
       </div>
 

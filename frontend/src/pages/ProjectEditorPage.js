@@ -40,6 +40,11 @@ function ProjectEditorPage() {
   const [executionTime, setExecutionTime] = useState(null);
   const [activeUsers, setActiveUsers] = useState([]);
   const [collaborationNotice, setCollaborationNotice] = useState('');
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [collaboratorEmail, setCollaboratorEmail] = useState('');
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const [shareSuccess, setShareSuccess] = useState('');
 
   const socketRef = useRef(null);
   const latestCodeRef = useRef('');
@@ -62,6 +67,7 @@ function ProjectEditorPage() {
   const terminalClassName = executionError && !executing
     ? 'editor-terminal editor-terminal--error'
     : 'editor-terminal';
+  const inviteLink = useMemo(() => `http://localhost:3000/projects/${id}`, [id]);
 
   useEffect(() => {
     latestCodeRef.current = code;
@@ -199,6 +205,76 @@ function ProjectEditorPage() {
     setLanguage(event.target.value);
   }, []);
 
+  const openShareModal = useCallback(() => {
+    setShareModalOpen(true);
+    setShareError('');
+    setShareSuccess('');
+  }, []);
+
+  const closeShareModal = useCallback(() => {
+    if (!shareLoading) {
+      setShareModalOpen(false);
+      setCollaboratorEmail('');
+      setShareError('');
+      setShareSuccess('');
+    }
+  }, [shareLoading]);
+
+  const handleAddCollaborator = useCallback(async (event) => {
+    event.preventDefault();
+
+    if (shareLoading) {
+      return;
+    }
+
+    const email = collaboratorEmail.trim();
+
+    if (!email) {
+      setShareError('Enter a collaborator email.');
+      setShareSuccess('');
+      return;
+    }
+
+    setShareLoading(true);
+    setShareError('');
+    setShareSuccess('');
+
+    try {
+      await api.post(`/api/projects/${id}/collaborators`, { email });
+      setShareSuccess(`${email} can now open this project.`);
+      setCollaboratorEmail('');
+    } catch (err) {
+      setShareError(err.response?.data?.message || 'Failed to add collaborator.');
+    } finally {
+      setShareLoading(false);
+    }
+  }, [collaboratorEmail, id, shareLoading]);
+
+  const handleCopyInviteLink = useCallback(async () => {
+    setShareError('');
+    setShareSuccess('');
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteLink);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = inviteLink;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      setShareSuccess('Invite link copied.');
+    } catch {
+      setShareError('Could not copy the invite link.');
+    }
+  }, [inviteLink]);
+
   const handleRunCode = useCallback(async () => {
     if (executing) {
       return;
@@ -279,6 +355,14 @@ function ProjectEditorPage() {
             )}
           </div>
 
+          <button
+            type="button"
+            className="editor-share-btn"
+            onClick={openShareModal}
+          >
+            Share
+          </button>
+
           <label className="editor-language" htmlFor="language-select">
             Language
             <select
@@ -332,6 +416,75 @@ function ProjectEditorPage() {
           </pre>
         </section>
       </main>
+
+      {shareModalOpen && (
+        <div className="share-modal-backdrop" role="presentation" onMouseDown={closeShareModal}>
+          <section
+            className="share-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-project-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="share-modal__header">
+              <div>
+                <h2 id="share-project-title">Share Project</h2>
+                <p>{projectName}</p>
+              </div>
+              <button
+                type="button"
+                className="share-modal__close"
+                onClick={closeShareModal}
+                disabled={shareLoading}
+                aria-label="Close share dialog"
+              >
+                x
+              </button>
+            </div>
+
+            <form className="share-form" onSubmit={handleAddCollaborator}>
+              {shareError && <p className="share-message share-message--error">{shareError}</p>}
+              {shareSuccess && <p className="share-message share-message--success">{shareSuccess}</p>}
+
+              <label className="share-field" htmlFor="collaborator-email">
+                Collaborator email
+                <input
+                  id="collaborator-email"
+                  type="email"
+                  value={collaboratorEmail}
+                  onChange={(event) => setCollaboratorEmail(event.target.value)}
+                  placeholder="collaborator@example.com"
+                  disabled={shareLoading}
+                  required
+                  autoFocus
+                />
+              </label>
+
+              <div className="share-actions">
+                <button
+                  type="submit"
+                  className="editor-share-btn editor-share-btn--primary"
+                  disabled={shareLoading}
+                >
+                  {shareLoading ? 'Adding...' : 'Add Collaborator'}
+                </button>
+                <button
+                  type="button"
+                  className="editor-share-btn"
+                  onClick={handleCopyInviteLink}
+                  disabled={shareLoading}
+                >
+                  Copy Invite Link
+                </button>
+              </div>
+            </form>
+
+            <div className="share-link" title={inviteLink}>
+              {inviteLink}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
