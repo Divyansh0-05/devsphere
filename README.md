@@ -357,20 +357,6 @@ These are known engineering boundaries rather than hidden assumptions.
 
 ---
 
-## Screenshots
-
-Screenshots are intentionally kept as placeholders until final production captures are added.
-
-| Screen | Preview |
-|---|---|
-| Login | ![Login page screenshot placeholder](docs/screenshots/login-placeholder.png) |
-| Dashboard | ![Dashboard screenshot placeholder](docs/screenshots/dashboard-placeholder.png) |
-| Project Editor | ![Project editor screenshot placeholder](docs/screenshots/editor-placeholder.png) |
-| Collaboration | ![Collaboration screenshot placeholder](docs/screenshots/collaboration-placeholder.png) |
-| Admin Dashboard | ![Admin dashboard screenshot placeholder](docs/screenshots/admin-placeholder.png) |
-
----
-
 ## Local Development Setup
 
 ### Prerequisites
